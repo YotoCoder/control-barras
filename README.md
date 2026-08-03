@@ -8,8 +8,6 @@ Todo corre en el teléfono: el packing list nunca sale del dispositivo.
 Las barras llegan sin marcar. El trabajo es averiguar qué item es cada una y
 pintarle el número. La app hace la parte de averiguar.
 
-### Modo Asignar (la pasada principal)
-
 1. Cargas el packing list en `.xlsx`. La app detecta sola la fila de cabecera
    (busca la columna `ITEM`) y lee `Bruto - Cliente`, `LEY` y `PESO PURO`.
 2. Al cargarlo te dice cuál es el par de pesos más cercano del embarque, y te
@@ -17,13 +15,16 @@ pintarle el número. La app hace la parte de averiguar.
 3. Pones la barra en la balanza y tecleas el peso.
 4. La app te dice qué número pintar, con la diferencia contra la lista y cuánto
    margen le saca al segundo candidato.
-5. Pintas, tomas la foto y confirmas. Esa barra sale del pool.
+5. Pintas y confirmas. Esa barra sale del pool y su casilla en el progreso
+   pasa a mostrar el peso con el que quedó asignada — así, más adelante, para
+   verificarla basta con volver a pesarla y comparar contra ese número.
 
-### Modo Verificar (segunda pasada)
+### Corregir una asignación
 
-Con las barras ya pintadas, pesas otra vez y escribes el número que ves.
-La app contrasta peso contra pintura y marca las que no cuadran. No consume
-del pool: puedes repasar las que quieras, en cualquier orden.
+Si te equivocaste al confirmar, toca la casilla de esa barra en la sección de
+Progreso. Se precarga el peso con el que se asignó; vuelve a pesar (o ajusta
+el valor) y confirma para sobreescribir el registro. No afecta al resto del
+pool.
 
 ## Alertas
 
@@ -33,7 +34,6 @@ del pool: puedes repasar las que quieras, en cualquier orden.
 | Delta > 2.0 g contra la lista | Rojo |
 | El 2º candidato a menos de 3.0 g del primero | Rojo — no pintes |
 | Última barra del embarque (asignada por descarte) | Ámbar |
-| Verificando: la pintura no coincide con el peso | Rojo |
 
 Las tolerancias están en las tres primeras constantes de `app.js`.
 
@@ -69,9 +69,9 @@ Después funciona sin señal.
 
 ## Datos
 
-- Confirmaciones y fotos viven en IndexedDB, solo en ese teléfono.
-- No hay backup automático. **Exporta al cerrar cada embarque.**
-- "Cerrar embarque" borra todo sin vuelta atrás.
+- Las asignaciones viven en IndexedDB, solo en ese teléfono.
+- No hay backup automático. **Exporta el CSV cuando termines un embarque.**
+- Cargar un nuevo packing list reemplaza el embarque y las asignaciones anteriores.
 
 ## Nunca commitear
 
@@ -82,7 +82,7 @@ el packing list no entra ahí bajo ningún concepto.
 
 ```
 index.html      UI y estilos
-app.js          parseo, matching, IndexedDB, cámara, exportación
+app.js          parseo, matching, IndexedDB, exportación
 sw.js           service worker (offline)
 manifest.json   metadatos PWA
 icon-192.png    iconos

@@ -1,4 +1,4 @@
-/* Control de barras — asignación de identidad por peso y verificación posterior.
+/* Control de barras — asignación de identidad por peso.
    Todo corre en el teléfono. Nada sale de aquí salvo lo que exportes a mano. */
 
 // ---------- Tolerancias (en gramos) ----------
@@ -7,12 +7,10 @@ const TOL_MAX   = 2.00;  // por encima de esto -> alerta roja
 const TOL_AMBIG = 3.00;  // margen mínimo que debe sacar el 1er candidato al 2º
 
 // ---------- Estado ----------
-let embarque = null;      // { nombre, cargadoEn, barras:[{item,bruto,ley,puro}] }
-let registros = {};       // asignaciones  { item: {item, medido, delta, ts} }
-let verificaciones = {};  // 2ª pasada     { item: {pintado, medido, delta, ok, ts} }
-let modo = 'asignar';     // 'asignar' | 'verificar'
-let fotoActual = null;    // Blob
-let candidato = null;     // barra candidata en vivo
+let embarque = null;   // { nombre, cargadoEn, barras:[{item,bruto,ley,puro}] }
+let registros = {};    // asignaciones  { item: {item, medido, delta, ts} }
+let edicion = null;    // item en corrección, o null
+let candidato = null;  // barra candidata en vivo
 
 // ---------- IndexedDB mínima ----------
 const DB = 'barras-db';
@@ -45,15 +43,6 @@ function leer(store, clave) {
     const req = db.transaction(store, 'readonly').objectStore(store).get(clave);
     req.onsuccess = () => ok(req.result);
     req.onerror = () => err(req.error);
-  });
-}
-
-function limpiar(store) {
-  return new Promise((ok, err) => {
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).clear();
-    tx.oncomplete = ok;
-    tx.onerror = () => err(tx.error);
   });
 }
 
@@ -96,8 +85,8 @@ function parsearLibro(buffer) {
 }
 
 // ---------- Matching ----------
-function ordenarCandidatos(peso, todas = false) {
-  const pool = todas ? embarque.barras : embarque.barras.filter(b => !registros[b.item]);
+function ordenarCandidatos(peso) {
+  const pool = embarque.barras.filter(b => !registros[b.item]);
   return pool
     .map(b => ({ ...b, delta: peso - b.bruto }))
     .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta));
@@ -108,31 +97,69 @@ const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toFixed(d);
 const signo = d => (d >= 0 ? '+' : '−') + fmt(Math.abs(d));
 
-function pintarLcd() {
-  const peso = parseFloat($('peso').value.replace(',', '.'));
-  const pintado = $('pintado').value.trim();
-  const verificando = modo === 'verificar';
+function vaciarLcd(txt) {
+  candidato = null;
+  $('lcdVacio').textContent = txt;
+  $('lcdVacio').classList.remove('oculto');
+  $('lcdDatos').classList.add('oculto');
+  $('rotuloPintar').classList.add('oculto');
+  $('btnConfirmar').disabled = true;
+}
 
-  const vaciar = txt => {
-    candidato = null;
-    $('lcdVacio').textContent = txt;
-    $('lcdVacio').classList.remove('oculto');
-    $('lcdDatos').classList.add('oculto');
-    $('rotuloPintar').classList.add('oculto');
-    $('btnConfirmar').disabled = true;
-  };
+function pintarLcdEdicion() {
+  const barra = embarque.barras.find(b => b.item === edicion);
+  const peso = parseFloat($('peso').value.replace(',', '.'));
+  $('rotuloPintar').classList.add('oculto');
+  $('bannerEdicion').classList.remove('oculto');
+  $('txtEdicion').textContent =
+    `Item ${barra.item}. Peso registrado: ${fmt(registros[barra.item].medido)} g. Vuelve a pesar y confirma para corregir.`;
 
   if (!Number.isFinite(peso) || peso <= 0) {
-    vaciar('esperando peso');
+    candidato = null;
+    $('lcdVacio').textContent = 'esperando peso';
+    $('lcdVacio').classList.remove('oculto');
+    $('lcdDatos').classList.add('oculto');
+    $('btnConfirmar').disabled = true;
     $('estado').innerHTML = '';
     return;
   }
 
-  const orden = ordenarCandidatos(peso, verificando);
+  candidato = { ...barra, delta: peso - barra.bruto };
+  const abs = Math.abs(candidato.delta);
+
+  $('lcdVacio').classList.add('oculto');
+  $('lcdDatos').classList.remove('oculto');
+  $('lcdItem').textContent = candidato.item;
+  $('lcdDelta').textContent = signo(candidato.delta) + ' g';
+  $('lcdBruto').textContent = fmt(candidato.bruto);
+  $('lcdLey').textContent = fmt(candidato.ley);
+  $('lcdPuro').textContent = fmt(candidato.puro);
+
+  $('btnConfirmar').disabled = false;
+  $('btnConfirmar').textContent = `Guardar corrección item ${candidato.item}`;
+
+  $('estado').innerHTML = abs > TOL_MAX
+    ? `<div class="est est-mal"><b>Fuera de tolerancia</b>${fmt(abs)} g de diferencia contra la lista.</div>`
+    : `<div class="est est-ok"><b>Dentro de tolerancia</b>Diferencia de ${fmt(abs)} g contra la lista.</div>`;
+}
+
+function pintarLcd() {
+  if (edicion != null) { pintarLcdEdicion(); return; }
+
+  const peso = parseFloat($('peso').value.replace(',', '.'));
+  $('bannerEdicion').classList.add('oculto');
+
+  if (!Number.isFinite(peso) || peso <= 0) {
+    vaciarLcd('esperando peso');
+    $('estado').innerHTML = '';
+    return;
+  }
+
+  const orden = ordenarCandidatos(peso);
   if (!orden.length) {
-    vaciar('todas las barras asignadas');
+    vaciarLcd('todas las barras asignadas');
     $('estado').innerHTML =
-      '<div class="est est-ok"><b>Embarque completo</b>Exporta el CSV y pasa a modo Verificar para repasar la pintura.</div>';
+      '<div class="est est-ok"><b>Embarque completo</b>Toca una barra ya asignada si necesitas corregirla.</div>';
     return;
   }
 
@@ -166,35 +193,20 @@ function pintarLcd() {
       `Con esta diferencia el peso no basta para decidir. Vuelve a pesar antes de pintar nada.`]);
   }
 
-  if (verificando) {
-    if (!pintado) {
-      avisos.push(['warn', 'Falta el número pintado',
-        `Escribe lo que está pintado en la barra para contrastarlo con el peso.`]);
-    } else if (Number(pintado) !== candidato.item) {
-      avisos.push(['mal', 'La pintura no cuadra',
-        `El peso dice item ${candidato.item}, la barra dice ${pintado}. Una de las dos está mal.`]);
-    } else {
-      avisos.push(['ok', 'Pintura correcta',
-        `Item ${candidato.item}, diferencia de ${fmt(abs)} g contra la lista.`]);
-    }
-    $('rotuloPintar').classList.add('oculto');
-    $('btnConfirmar').disabled = !pintado;
-    $('btnConfirmar').textContent = 'Registrar verificación';
-  } else {
-    if (pendientes === 1) {
-      avisos.push(['warn', 'Última barra',
-        `Es la única sin asignar, así que le toca el item ${candidato.item} por descarte. ` +
-        `Aun así el peso debería cuadrar: comprueba la diferencia antes de pintar.`]);
-    } else if (!avisos.length) {
-      avisos.push(['ok', 'Asignación clara',
-        `Diferencia de ${fmt(abs)} g contra la lista, y el siguiente candidato está a ${fmt(margen)} g más.`]);
-    }
-    $('txtPintar').textContent =
-      `Pinta el número ${candidato.item} en esta barra. Luego confirma para pasar a la siguiente.`;
-    $('rotuloPintar').classList.remove('oculto');
-    $('btnConfirmar').disabled = false;
-    $('btnConfirmar').textContent = `Pintada — confirmar item ${candidato.item}`;
+  if (pendientes === 1) {
+    avisos.push(['warn', 'Última barra',
+      `Es la única sin asignar, así que le toca el item ${candidato.item} por descarte. ` +
+      `Aun así el peso debería cuadrar: comprueba la diferencia antes de pintar.`]);
+  } else if (!avisos.length) {
+    avisos.push(['ok', 'Asignación clara',
+      `Diferencia de ${fmt(abs)} g contra la lista, y el siguiente candidato está a ${fmt(margen)} g más.`]);
   }
+
+  $('txtPintar').textContent =
+    `Pinta el número ${candidato.item} en esta barra. Luego confirma para pasar a la siguiente.`;
+  $('rotuloPintar').classList.remove('oculto');
+  $('btnConfirmar').disabled = false;
+  $('btnConfirmar').textContent = `Pintada — confirmar item ${candidato.item}`;
 
   $('estado').innerHTML = avisos
     .map(([t, tit, txt]) => `<div class="est est-${t}"><b>${tit}</b>${txt}</div>`)
@@ -205,39 +217,18 @@ function pintarProgreso() {
   const total = embarque.barras.length;
   const hechas = Object.keys(registros).length;
   $('progBarra').style.width = (hechas / total * 100) + '%';
+  $('resumenProgreso').textContent = `${hechas} / ${total} barras asignadas`;
 
   $('gridItems').innerHTML = embarque.barras.map(b => {
-    const r = registros[b.item], v = verificaciones[b.item];
+    const r = registros[b.item];
     let clase = '', pie = fmt(b.bruto, 1);
     if (r) {
-      pie = signo(r.delta);
+      pie = fmt(r.medido, 2);
       clase = Math.abs(r.delta) > TOL_MAX ? 'alerta' : 'hecho';
-      if (v) clase = v.ok ? 'verif' : 'alerta';
+      if (edicion === b.item) clase += ' editando';
     }
-    return `<div class="chip ${clase}"><b>${b.item}</b>${pie}</div>`;
+    return `<div class="chip ${clase}" data-item="${b.item}"><b>${b.item}</b>${pie}</div>`;
   }).join('');
-
-  const sumaLista = embarque.barras.reduce((s, b) => s + b.bruto, 0);
-  const sumaFino  = embarque.barras.reduce((s, b) => s + b.puro, 0);
-  const sumaMed   = Object.values(registros).reduce((s, r) => s + r.medido, 0);
-  const finoHecho = Object.values(registros)
-    .reduce((s, r) => s + (embarque.barras.find(b => b.item === r.item)?.puro || 0), 0);
-  const nVerif = Object.keys(verificaciones).length;
-
-  $('totales').innerHTML = `
-    <div class="tot"><span>Barras asignadas</span><b>${hechas} / ${total}</b></div>
-    <div class="tot"><span>Barras verificadas</span><b>${nVerif} / ${total}</b></div>
-    <div class="tot"><span>Bruto lista (g)</span><b>${fmt(sumaLista)}</b></div>
-    <div class="tot"><span>Bruto pesado (g)</span><b>${fmt(sumaMed)}</b></div>
-    <div class="tot"><span>Fino asignado (g)</span><b>${fmt(finoHecho)} / ${fmt(sumaFino)}</b></div>`;
-}
-
-function pintarModo() {
-  const verificando = modo === 'verificar';
-  $('modoAsignar').setAttribute('aria-pressed', String(!verificando));
-  $('modoVerificar').setAttribute('aria-pressed', String(verificando));
-  $('campoPintado').classList.toggle('oculto', !verificando);
-  if (!verificando) $('pintado').value = '';
 }
 
 function pintarTodo() {
@@ -250,21 +241,8 @@ function pintarTodo() {
   $('vistaCarga').classList.add('oculto');
   $('vistaPesaje').classList.remove('oculto');
   $('nombreEmbarque').textContent = embarque.nombre;
-  pintarModo();
   pintarProgreso();
   pintarLcd();
-}
-
-// ---------- Foto ----------
-async function reducirImagen(file, max = 1600) {
-  const bmp = await createImageBitmap(file);
-  const escala = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const w = Math.round(bmp.width * escala), h = Math.round(bmp.height * escala);
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
-  bmp.close?.();
-  return new Promise(ok => canvas.toBlob(ok, 'image/jpeg', 0.8));
 }
 
 // ---------- Exportación ----------
@@ -277,34 +255,33 @@ function descargar(blob, nombre) {
 }
 
 function exportarCsv() {
-  const cab = ['item', 'bruto_lista_g', 'peso_balanza_g', 'delta_g', 'ley', 'fino_lista_g',
-               'asignada_en', 'verif_numero_pintado', 'verif_peso_g', 'verif_ok', 'verificada_en'];
+  const cab = ['item', 'bruto_lista_g', 'peso_balanza_g', 'delta_g', 'ley', 'fino_lista_g', 'asignada_en'];
   const filas = embarque.barras.map(b => {
-    const r = registros[b.item], v = verificaciones[b.item];
+    const r = registros[b.item];
     return [
       b.item, fmt(b.bruto), r ? fmt(r.medido) : '', r ? fmt(r.delta) : '',
       fmt(b.ley), fmt(b.puro), r ? new Date(r.ts).toISOString() : '',
-      v?.pintado ?? '', v ? fmt(v.medido) : '', v ? (v.ok ? 'si' : 'NO') : '',
-      v ? new Date(v.ts).toISOString() : '',
     ].join(',');
   });
   const csv = '\ufeff' + [cab.join(','), ...filas].join('\r\n');
   descargar(new Blob([csv], { type: 'text/csv' }), `${embarque.nombre}-asignacion.csv`);
 }
 
-async function exportarFotos() {
-  if (typeof JSZip === 'undefined') {
-    alert('Las fotos se comprimen con una librería que se carga con conexión. Conéctate una vez y vuelve a intentarlo.');
-    return;
-  }
-  const zip = new JSZip();
-  let n = 0;
-  for (const b of embarque.barras) {
-    const foto = await leer('fotos', b.item);
-    if (foto) { zip.file(`item-${String(b.item).padStart(2, '0')}.jpg`, foto); n++; }
-  }
-  if (!n) { alert('Todavía no hay fotos guardadas.'); return; }
-  descargar(await zip.generateAsync({ type: 'blob' }), `${embarque.nombre}-fotos.zip`);
+// ---------- Edición de asignaciones ----------
+function empezarEdicion(item) {
+  if (!registros[item]) return;
+  edicion = item;
+  $('peso').value = fmt(registros[item].medido);
+  pintarTodo();
+  $('peso').focus();
+  $('peso').select();
+}
+
+function cancelarEdicion() {
+  edicion = null;
+  $('peso').value = '';
+  $('bannerEdicion').classList.add('oculto');
+  pintarTodo();
 }
 
 // ---------- Eventos ----------
@@ -315,11 +292,9 @@ $('archivoXlsx').addEventListener('change', async e => {
     if (typeof XLSX === 'undefined') throw new Error('La librería de Excel no cargó. Necesitas conexión la primera vez.');
     const barras = parsearLibro(await file.arrayBuffer());
     embarque = { nombre: file.name.replace(/\.xlsx?$/i, ''), cargadoEn: Date.now(), barras };
-    registros = {}; verificaciones = {};
-    await limpiar('fotos');
+    registros = {}; edicion = null;
     await guardar('kv', 'embarque', embarque);
     await guardar('kv', 'registros', registros);
-    await guardar('kv', 'verificaciones', verificaciones);
 
     const orden = [...barras].sort((a, b) => a.bruto - b.bruto);
     let gapMin = Infinity, par = null;
@@ -344,75 +319,39 @@ $('archivoXlsx').addEventListener('change', async e => {
   e.target.value = '';
 });
 
-$('archivoFoto').addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  fotoActual = await reducirImagen(file);
-  const img = $('fotoPrev');
-  img.src = URL.createObjectURL(fotoActual);
-  img.classList.remove('oculto');
-  e.target.value = '';
+$('peso').addEventListener('input', pintarLcd);
+
+$('gridItems').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const item = Number(chip.dataset.item);
+  if (registros[item]) empezarEdicion(item);
 });
 
-$('peso').addEventListener('input', pintarLcd);
-$('pintado').addEventListener('input', pintarLcd);
-
-function cambiarModo(nuevo) {
-  modo = nuevo;
-  $('peso').value = ''; $('pintado').value = '';
-  fotoActual = null;
-  $('fotoPrev').classList.add('oculto');
-  $('fotoPrev').removeAttribute('src');
-  pintarTodo();
-}
-$('modoAsignar').addEventListener('click', () => cambiarModo('asignar'));
-$('modoVerificar').addEventListener('click', () => cambiarModo('verificar'));
+$('btnCancelarEdicion').addEventListener('click', cancelarEdicion);
 
 $('btnConfirmar').addEventListener('click', async () => {
   if (!candidato) return;
   const medido = parseFloat($('peso').value.replace(',', '.'));
 
-  if (modo === 'verificar') {
-    const pintado = $('pintado').value.trim();
-    verificaciones[candidato.item] = {
-      pintado, medido, delta: candidato.delta,
-      ok: Number(pintado) === candidato.item && Math.abs(candidato.delta) <= TOL_MAX,
-      ts: Date.now(),
-    };
-    await guardar('kv', 'verificaciones', verificaciones);
-  } else {
-    registros[candidato.item] = { item: candidato.item, medido, delta: candidato.delta, ts: Date.now() };
-    if (fotoActual) await guardar('fotos', candidato.item, fotoActual);
-    await guardar('kv', 'registros', registros);
-  }
+  registros[candidato.item] = { item: candidato.item, medido, delta: candidato.delta, ts: Date.now() };
+  await guardar('kv', 'registros', registros);
 
-  fotoActual = null;
-  $('peso').value = ''; $('pintado').value = '';
-  $('fotoPrev').classList.add('oculto');
-  $('fotoPrev').removeAttribute('src');
+  const volverAEditar = edicion != null;
+  edicion = null;
+  $('peso').value = '';
+  $('bannerEdicion').classList.add('oculto');
   pintarTodo();
-  $('peso').focus();
+  if (!volverAEditar) $('peso').focus();
 });
 
 $('btnCsv').addEventListener('click', exportarCsv);
-$('btnZip').addEventListener('click', exportarFotos);
-
-$('btnReiniciar').addEventListener('click', async () => {
-  if (!confirm('Se borra el embarque, las asignaciones y las fotos de este teléfono. ¿Exportaste ya?')) return;
-  embarque = null; registros = {}; verificaciones = {}; fotoActual = null;
-  await limpiar('fotos');
-  await guardar('kv', 'embarque', null);
-  await guardar('kv', 'registros', {});
-  await guardar('kv', 'verificaciones', {});
-  pintarTodo();
-});
 
 // ---------- Arranque ----------
 (async () => {
   await abrirDB();
   embarque = (await leer('kv', 'embarque')) || null;
   registros = (await leer('kv', 'registros')) || {};
-  verificaciones = (await leer('kv', 'verificaciones')) || {};
   pintarTodo();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
