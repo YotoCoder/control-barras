@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d2023">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Control de barras</title>
+<style>
+:root{
+  --acero:#1d2023;
+  --acero-alto:#282c31;
+  --acero-borde:#3a4046;
+  --lcd:#e6e8c4;
+  --lcd-borde:#b9bd93;
+  --digito:#4b4fa6;
+  --oro:#c9a227;
+  --verde:#1b7a3e;
+  --verde-claro:#4caf6e;
+  --ambar:#d68a1a;
+  --rojo:#c4402f;
+  --texto:#e8eaec;
+  --texto-tenue:#8b9298;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--acero);
+  color:var(--texto);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.45;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+
+/* --- cabecera --- */
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0}
+.embarque{font-family:var(--mono);font-size:13px;color:var(--texto-tenue)}
+
+/* --- etiquetas utilitarias --- */
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--texto-tenue);margin:0 0 6px}
+
+/* --- panel LCD: el elemento firma --- */
+.lcd{
+  background:var(--lcd);
+  border:2px solid var(--lcd-borde);
+  border-radius:4px;
+  padding:14px 16px 12px;
+  margin-bottom:14px;
+  box-shadow:inset 0 1px 6px rgba(0,0,0,.18);
+}
+.lcd-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.lcd-item{
+  font-family:var(--mono);font-size:46px;font-weight:700;line-height:1;
+  color:var(--digito);letter-spacing:.02em;
+}
+.lcd-item small{font-size:15px;letter-spacing:.14em;text-transform:uppercase;opacity:.62;margin-right:8px;font-weight:600}
+.lcd-delta{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--digito)}
+.lcd-datos{
+  display:flex;gap:18px;margin-top:10px;padding-top:9px;
+  border-top:1px solid rgba(75,79,166,.28);
+  font-family:var(--mono);font-size:12.5px;color:#5a5e8e;
+}
+.lcd-datos b{font-weight:700;color:var(--digito)}
+.lcd-vacio{font-family:var(--mono);font-size:15px;color:#8d9070;letter-spacing:.06em;text-align:center;padding:16px 0}
+
+/* --- estados --- */
+.est{border-left:4px solid transparent;padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:14px}
+.est-ok{background:rgba(27,122,62,.14);border-color:var(--verde-claro);color:#8fdcab}
+.est-warn{background:rgba(214,138,26,.14);border-color:var(--ambar);color:#f0bf72}
+.est-mal{background:rgba(196,64,47,.16);border-color:var(--rojo);color:#f0a094}
+.est b{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+
+/* --- formulario --- */
+label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--texto-tenue);margin-bottom:6px}
+input[type=text],input[type=number]{
+  width:100%;background:var(--acero-alto);border:1px solid var(--acero-borde);
+  border-radius:4px;color:var(--texto);font-family:var(--mono);font-size:26px;
+  padding:12px 14px;text-align:center;letter-spacing:.04em;
+}
+input:focus{outline:2px solid var(--digito);outline-offset:1px;border-color:transparent}
+.campos{display:grid;grid-template-columns:1.7fr 1fr;gap:12px;margin-bottom:14px}
+.campos .pintado input{font-size:22px}
+
+button{
+  font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;border:none;border-radius:4px;padding:15px 18px;
+  width:100%;cursor:pointer;transition:opacity .12s;
+}
+button:active{opacity:.7}
+button:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
+.btn-primario{background:var(--verde);color:#fff}
+.btn-primario:disabled{background:var(--acero-alto);color:#585e64;cursor:default}
+.btn-sec{background:var(--acero-alto);color:var(--texto);border:1px solid var(--acero-borde)}
+.btn-oro{background:var(--oro);color:#231c00}
+.fila-btn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.fila-btn.sola{grid-template-columns:1fr}
+
+/* --- foto --- */
+.foto-zona{margin-bottom:14px}
+.foto-prev{width:100%;border-radius:4px;border:1px solid var(--acero-borde);display:block;margin-top:10px}
+input[type=file]{display:none}
+
+/* --- progreso --- */
+.barra-prog{height:5px;background:var(--acero-alto);border-radius:3px;overflow:hidden;margin:6px 0 16px}
+.barra-prog span{display:block;height:100%;background:var(--oro);transition:width .3s}
+.grid-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+.chip{
+  background:var(--acero-alto);border:1px solid var(--acero-borde);border-radius:4px;
+  padding:9px 6px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
+}
+.chip b{display:block;font-size:19px;color:var(--texto);font-weight:700}
+.chip.hecho{background:rgba(27,122,62,.16);border-color:var(--verde);color:#8fdcab}
+.chip.hecho b{color:#8fdcab}
+.chip.alerta{background:rgba(196,64,47,.16);border-color:var(--rojo);color:#f0a094}
+.chip.alerta b{color:#f0a094}
+.chip.verif{background:rgba(201,162,39,.16);border-color:var(--oro);color:#e6c65e}
+.chip.verif b{color:#e6c65e}
+
+/* --- selector de modo --- */
+.modos{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px;border:1px solid var(--acero-borde);border-radius:4px;overflow:hidden}
+.modos button{
+  border-radius:0;background:var(--acero-alto);color:var(--texto-tenue);
+  padding:12px 8px;font-size:12px;letter-spacing:.12em;
+}
+.modos button[aria-pressed=true]{background:var(--digito);color:#fff}
+
+/* --- instrucción de pintado --- */
+.pintar{
+  background:rgba(201,162,39,.14);border:1px dashed var(--oro);border-radius:4px;
+  padding:11px 13px;margin-bottom:14px;font-size:13.5px;color:#e6c65e;
+}
+.pintar b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px;color:var(--oro)}
+
+/* --- varios --- */
+section{margin-bottom:26px}
+hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
+.nota{font-size:13px;color:var(--texto-tenue);line-height:1.5}
+.oculto{display:none !important}
+.tot{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--texto-tenue);padding:5px 0;border-bottom:1px solid var(--acero-borde)}
+.tot b{color:var(--texto)}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Control de barras</h1>
+    <span class="embarque" id="nombreEmbarque">sin embarque</span>
+  </header>
+
+  <!-- ========== SIN EMBARQUE ========== -->
+  <section id="vistaCarga">
+    <p class="eyebrow">Paso 1</p>
+    <p class="nota" style="margin-top:0">Carga el packing list en Excel. Se queda en este teléfono; no se sube a ningún lado.</p>
+    <button class="btn-oro" onclick="document.getElementById('archivoXlsx').click()">Cargar packing list</button>
+    <input type="file" id="archivoXlsx" accept=".xlsx,.xls">
+    <div id="errorCarga"></div>
+  </section>
+
+  <!-- ========== VERIFICACIÓN ========== -->
+  <section id="vistaPesaje" class="oculto">
+
+    <div class="modos">
+      <button id="modoAsignar" aria-pressed="true">Asignar</button>
+      <button id="modoVerificar" aria-pressed="false">Verificar</button>
+    </div>
+
+    <div class="lcd">
+      <div id="lcdVacio" class="lcd-vacio">esperando peso</div>
+      <div id="lcdDatos" class="oculto">
+        <div class="lcd-fila">
+          <div class="lcd-item"><small>Item</small><span id="lcdItem">—</span></div>
+          <div class="lcd-delta" id="lcdDelta">—</div>
+        </div>
+        <div class="lcd-datos">
+          <span>lista <b id="lcdBruto">—</b> g</span>
+          <span>ley <b id="lcdLey">—</b></span>
+          <span>fino <b id="lcdPuro">—</b> g</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="rotuloPintar" class="pintar oculto">
+      <b>Antes de confirmar</b>
+      <span id="txtPintar"></span>
+    </div>
+
+    <div id="estado"></div>
+
+    <div class="campos" id="campos">
+      <div>
+        <label for="peso">Peso balanza (g)</label>
+        <input type="text" id="peso" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      </div>
+      <div class="pintado oculto" id="campoPintado">
+        <label for="pintado">Nº pintado</label>
+        <input type="text" id="pintado" inputmode="numeric" placeholder="—" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="foto-zona">
+      <button class="btn-sec" onclick="document.getElementById('archivoFoto').click()">Tomar foto</button>
+      <input type="file" id="archivoFoto" accept="image/*" capture="environment">
+      <img id="fotoPrev" class="foto-prev oculto" alt="Foto de la barra en la balanza">
+    </div>
+
+    <button class="btn-primario" id="btnConfirmar" disabled>Confirmar</button>
+
+    <hr>
+
+    <p class="eyebrow">Progreso</p>
+    <div class="barra-prog"><span id="progBarra" style="width:0%"></span></div>
+    <div class="grid-items" id="gridItems"></div>
+
+    <hr>
+
+    <div id="totales"></div>
+    <div class="fila-btn" style="margin-top:16px">
+      <button class="btn-sec" id="btnCsv">Exportar CSV</button>
+      <button class="btn-sec" id="btnZip">Exportar fotos</button>
+    </div>
+    <div class="fila-btn sola">
+      <button class="btn-sec" id="btnReiniciar" style="color:#f0a094">Cerrar embarque</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
