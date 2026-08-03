@@ -16,8 +16,9 @@ pintarle el número. La app hace la parte de averiguar.
 4. La app te dice qué número pintar, con la diferencia contra la lista y cuánto
    margen le saca al segundo candidato.
 5. Pintas y confirmas. Esa barra sale del pool y su casilla en el progreso
-   pasa a mostrar el peso con el que quedó asignada — así, más adelante, para
-   verificarla basta con volver a pesarla y comparar contra ese número.
+   pasa a mostrar el peso con el que quedó asignada, más la diferencia contra
+   la lista en rojo (si faltó peso) o verde (si sobró) — así, más adelante,
+   para verificarla basta con volver a pesarla y comparar contra ese número.
 
 ### Corregir una asignación
 
@@ -70,8 +71,11 @@ Después funciona sin señal.
 ## Datos
 
 - Las asignaciones viven en IndexedDB, solo en ese teléfono.
-- No hay backup automático. **Exporta el CSV cuando termines un embarque.**
+- No hay backup automático. **Exporta el Excel cuando termines un embarque.**
 - Cargar un nuevo packing list reemplaza el embarque y las asignaciones anteriores.
+- "Exportar Excel" genera un `.xlsx` con el packing (item, bruto, ley, puro) más
+  una columna "Diferencia bruto (g)" con el delta de cada barra ya asignada
+  (positivo si sobró peso, negativo si faltó).
 
 ## Nunca commitear
 
@@ -95,4 +99,4 @@ icon-512.png
   siete segmentos, buen contraste: es un caso favorable).
 - Huella visual: guardar la foto de cada barra al asignarla y compararla en
   embarques futuros. Resolvería los casos donde el peso no basta.
-- Firma del operador y hora en el CSV si alguna vez hace falta para auditoría.
+- Firma del operador y hora en el Excel si alguna vez hace falta para auditoría.

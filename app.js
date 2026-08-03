@@ -97,6 +97,12 @@ const $ = id => document.getElementById(id);
 const fmt = (n, d = 2) => Number(n).toFixed(d);
 const signo = d => (d >= 0 ? '+' : '−') + fmt(Math.abs(d));
 
+function pintarDelta(el, delta) {
+  el.textContent = signo(delta) + ' g';
+  el.classList.remove('d-rojo', 'd-verde');
+  el.classList.add(delta < 0 ? 'd-rojo' : 'd-verde');
+}
+
 function vaciarLcd(txt) {
   candidato = null;
   $('lcdVacio').textContent = txt;
@@ -130,7 +136,7 @@ function pintarLcdEdicion() {
   $('lcdVacio').classList.add('oculto');
   $('lcdDatos').classList.remove('oculto');
   $('lcdItem').textContent = candidato.item;
-  $('lcdDelta').textContent = signo(candidato.delta) + ' g';
+  pintarDelta($('lcdDelta'), candidato.delta);
   $('lcdBruto').textContent = fmt(candidato.bruto);
   $('lcdLey').textContent = fmt(candidato.ley);
   $('lcdPuro').textContent = fmt(candidato.puro);
@@ -170,7 +176,7 @@ function pintarLcd() {
   $('lcdVacio').classList.add('oculto');
   $('lcdDatos').classList.remove('oculto');
   $('lcdItem').textContent = candidato.item;
-  $('lcdDelta').textContent = signo(candidato.delta) + ' g';
+  pintarDelta($('lcdDelta'), candidato.delta);
   $('lcdBruto').textContent = fmt(candidato.bruto);
   $('lcdLey').textContent = fmt(candidato.ley);
   $('lcdPuro').textContent = fmt(candidato.puro);
@@ -221,11 +227,12 @@ function pintarProgreso() {
 
   $('gridItems').innerHTML = embarque.barras.map(b => {
     const r = registros[b.item];
-    let clase = '', pie = fmt(b.bruto, 1);
+    let clase = '', pie = `<span class="chip-peso">${fmt(b.bruto)}</span>`;
     if (r) {
-      pie = fmt(r.medido, 2);
       clase = Math.abs(r.delta) > TOL_MAX ? 'alerta' : 'hecho';
       if (edicion === b.item) clase += ' editando';
+      pie = `<span class="chip-peso">${fmt(r.medido, 2)}</span>` +
+            `<span class="chip-delta ${r.delta < 0 ? 'd-rojo' : 'd-verde'}">${signo(r.delta)}</span>`;
     }
     return `<div class="chip ${clase}" data-item="${b.item}"><b>${b.item}</b>${pie}</div>`;
   }).join('');
@@ -246,25 +253,32 @@ function pintarTodo() {
 }
 
 // ---------- Exportación ----------
-function descargar(blob, nombre) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = nombre;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
-
-function exportarCsv() {
-  const cab = ['item', 'bruto_lista_g', 'peso_balanza_g', 'delta_g', 'ley', 'fino_lista_g', 'asignada_en'];
+function exportarExcel() {
   const filas = embarque.barras.map(b => {
     const r = registros[b.item];
-    return [
-      b.item, fmt(b.bruto), r ? fmt(r.medido) : '', r ? fmt(r.delta) : '',
-      fmt(b.ley), fmt(b.puro), r ? new Date(r.ts).toISOString() : '',
-    ].join(',');
+    return {
+      ITEM: b.item,
+      BRUTO: Number(fmt(b.bruto)),
+      LEY: Number(fmt(b.ley)),
+      PURO: Number(fmt(b.puro)),
+      'DIFERENCIA BRUTO (g)': r ? Number(fmt(r.delta)) : '',
+    };
   });
-  const csv = '\ufeff' + [cab.join(','), ...filas].join('\r\n');
-  descargar(new Blob([csv], { type: 'text/csv' }), `${embarque.nombre}-asignacion.csv`);
+  const ws = XLSX.utils.json_to_sheet(filas);
+
+  // Fuerza 2 decimales visibles en Excel: sin esto, un valor como 1000
+  // se ve "1000" en la celda en vez de "1000.00" (el número de fondo no cambia).
+  const rango = XLSX.utils.decode_range(ws['!ref']);
+  for (let fila = rango.s.r + 1; fila <= rango.e.r; fila++) {
+    for (let col = 1; col <= 4; col++) {
+      const celda = ws[XLSX.utils.encode_cell({ r: fila, c: col })];
+      if (celda && typeof celda.v === 'number') celda.z = '0.00';
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Asignacion');
+  XLSX.writeFile(wb, `${embarque.nombre}-asignacion.xlsx`);
 }
 
 // ---------- Edición de asignaciones ----------
@@ -345,7 +359,7 @@ $('btnConfirmar').addEventListener('click', async () => {
   if (!volverAEditar) $('peso').focus();
 });
 
-$('btnCsv').addEventListener('click', exportarCsv);
+$('btnExcel').addEventListener('click', exportarExcel);
 
 // ---------- Arranque ----------
 (async () => {

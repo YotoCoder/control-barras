@@ -1,5 +1,5 @@
 /* Cachea el esqueleto de la app para que funcione sin señal. */
-const CACHE = 'barras-v1';
+const CACHE = 'barras-v2';
 const SHELL = [
   './',
   './index.html',
@@ -8,7 +8,6 @@ const SHELL = [
   './icon-192.png',
   './icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
 ];
 
 self.addEventListener('install', e => {
@@ -30,10 +29,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    fetch(e.request).then(res => {
       const copia = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copia)).catch(() => {});
       return res;
-    }).catch(() => hit))
+    }).catch(() => caches.match(e.request))
   );
 });
