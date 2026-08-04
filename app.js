@@ -231,8 +231,7 @@ function pintarProgreso() {
     if (r) {
       clase = Math.abs(r.delta) > TOL_MAX ? 'alerta' : 'hecho';
       if (edicion === b.item) clase += ' editando';
-      pie = `<span class="chip-peso">${fmt(r.medido, 2)}</span>` +
-            `<span class="chip-delta ${r.delta < 0 ? 'd-rojo' : 'd-verde'}">${signo(r.delta)}</span>`;
+      pie += `<span class="chip-delta ${r.delta < 0 ? 'd-rojo' : 'd-verde'}">${signo(r.delta)}</span>`;
     }
     return `<div class="chip ${clase}" data-item="${b.item}"><b>${b.item}</b>${pie}</div>`;
   }).join('');
@@ -298,7 +297,24 @@ function cancelarEdicion() {
   pintarTodo();
 }
 
+async function borrarAnotacion() {
+  if (edicion == null) return;
+  const item = edicion;
+  if (!confirm(`¿Borrar la asignación del item ${item}? Vuelve al pool sin peso registrado.`)) return;
+  delete registros[item];
+  await guardar('kv', 'registros', registros);
+  cancelarEdicion();
+}
+
 // ---------- Eventos ----------
+$('nombreEmbarque').addEventListener('click', () => {
+  const hechas = embarque ? Object.keys(registros).length : 0;
+  if (hechas && !confirm(
+    `Cargar otro packing list borra el embarque actual y sus ${hechas} asignaciones. ¿Continuar?`
+  )) return;
+  $('archivoXlsx').click();
+});
+
 $('archivoXlsx').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -343,6 +359,7 @@ $('gridItems').addEventListener('click', e => {
 });
 
 $('btnCancelarEdicion').addEventListener('click', cancelarEdicion);
+$('btnBorrarAnotacion').addEventListener('click', borrarAnotacion);
 
 $('btnConfirmar').addEventListener('click', async () => {
   if (!candidato) return;

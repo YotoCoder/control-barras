@@ -15,17 +15,24 @@ pintarle el número. La app hace la parte de averiguar.
 3. Pones la barra en la balanza y tecleas el peso.
 4. La app te dice qué número pintar, con la diferencia contra la lista y cuánto
    margen le saca al segundo candidato.
-5. Pintas y confirmas. Esa barra sale del pool y su casilla en el progreso
-   pasa a mostrar el peso con el que quedó asignada, más la diferencia contra
-   la lista en rojo (si faltó peso) o verde (si sobró) — así, más adelante,
-   para verificarla basta con volver a pesarla y comparar contra ese número.
+5. Pintas y confirmas. Esa barra sale del pool; su casilla en el progreso
+   sigue mostrando el peso de la lista, y debajo aparece la diferencia contra
+   lo que pesó, en rojo (si faltó peso) o verde (si sobró) — así, más adelante,
+   para verificarla basta con volver a pesarla y comparar el delta.
 
-### Corregir una asignación
+### Corregir o borrar una asignación
 
-Si te equivocaste al confirmar, toca la casilla de esa barra en la sección de
-Progreso. Se precarga el peso con el que se asignó; vuelve a pesar (o ajusta
-el valor) y confirma para sobreescribir el registro. No afecta al resto del
-pool.
+Toca la casilla de una barra ya asignada para corregirla: se precarga el peso
+con el que se asignó, vuelve a pesar (o ajusta el valor) y confirma para
+sobreescribir el registro. Si te equivocaste de barra, el botón "Borrar
+anotación" quita la asignación por completo y la barra vuelve al pool sin
+peso registrado. Ninguna de las dos acciones afecta al resto del pool.
+
+### Cargar otro packing list
+
+Tocar el nombre del embarque, arriba a la derecha, abre el selector de
+archivo para cargar otro `.xlsx`. Si ya hay asignaciones hechas, pide
+confirmación antes de reemplazar el embarque — se pierden todas.
 
 ## Alertas
 

@@ -42,7 +42,13 @@ body{
 /* --- cabecera --- */
 header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
 h1{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0}
-.embarque{font-family:var(--mono);font-size:13px;color:var(--texto-tenue)}
+.embarque{
+  font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
+  background:none;border:1px dashed var(--acero-borde);border-radius:4px;
+  padding:5px 9px;width:auto;text-transform:none;letter-spacing:0;font-weight:400;
+  cursor:pointer;
+}
+.embarque:active{opacity:.7}
 
 /* --- etiquetas utilitarias --- */
 .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--texto-tenue);margin:0 0 6px}
@@ -144,7 +150,7 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 
   <header>
     <h1>Control de barras</h1>
-    <span class="embarque" id="nombreEmbarque">sin embarque</span>
+    <button class="embarque" id="nombreEmbarque" title="Tocar para cargar otro packing list">sin embarque</button>
   </header>
 
   <!-- ========== SIN EMBARQUE ========== -->
@@ -182,7 +188,10 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
     <div id="bannerEdicion" class="pintar oculto" style="border-color:var(--digito);background:rgba(75,79,166,.14);color:#c7c9f4">
       <b style="color:var(--digito)">Corrigiendo</b>
       <span id="txtEdicion"></span>
-      <button class="btn-sec" id="btnCancelarEdicion" style="margin-top:10px;padding:9px 14px;width:auto">Cancelar corrección</button>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn-sec" id="btnCancelarEdicion" style="padding:9px 14px;width:auto">Cancelar corrección</button>
+        <button class="btn-sec" id="btnBorrarAnotacion" style="padding:9px 14px;width:auto;color:#f0a094">Borrar anotación</button>
+      </div>
     </div>
 
     <div id="estado"></div>
