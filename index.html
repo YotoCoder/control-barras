@@ -115,8 +115,9 @@ input[type=file]{display:none}
 .barra-prog span{display:block;height:100%;background:var(--oro);transition:width .3s}
 .grid-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
 .chip{
+  position:relative;
   background:var(--acero-alto);border:1px solid var(--acero-borde);border-radius:4px;
-  padding:9px 6px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
+  padding:9px 18px 14px 6px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
 }
 .chip b{display:block;font-size:19px;color:var(--texto);font-weight:700}
 .chip.hecho{background:rgba(27,122,62,.16);border-color:var(--verde);color:#8fdcab;cursor:pointer}
@@ -127,6 +128,7 @@ input[type=file]{display:none}
 .chip.editando{outline:2px solid var(--oro);outline-offset:1px}
 .chip-peso{display:block}
 .chip-delta{display:block;font-weight:700}
+.chip-ley{position:absolute;bottom:3px;right:5px;font-size:9px;color:var(--oro);font-weight:700}
 .d-rojo{color:var(--rojo)}
 .d-verde{color:var(--verde-claro)}
 

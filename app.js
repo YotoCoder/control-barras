@@ -233,6 +233,7 @@ function pintarProgreso() {
       if (edicion === b.item) clase += ' editando';
       pie += `<span class="chip-delta ${r.delta < 0 ? 'd-rojo' : 'd-verde'}">${signo(r.delta)}</span>`;
     }
+    pie += `<span class="chip-ley">${fmt(b.ley)}</span>`;
     return `<div class="chip ${clase}" data-item="${b.item}"><b>${b.item}</b>${pie}</div>`;
   }).join('');
 }
