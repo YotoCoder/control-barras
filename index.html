@@ -144,6 +144,23 @@ section{margin-bottom:26px}
 hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 .nota{font-size:13px;color:var(--texto-tenue);line-height:1.5}
 .oculto{display:none !important}
+
+/* --- panel de pares cercanos --- */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:19;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.overlay.abierto{opacity:1;pointer-events:auto}
+.panel-pares{
+  position:fixed;top:0;right:0;height:100%;width:min(320px,86vw);
+  background:var(--acero-alto);border-left:1px solid var(--acero-borde);
+  box-shadow:-8px 0 24px rgba(0,0,0,.35);z-index:20;overflow-y:auto;
+  padding:calc(16px + env(safe-area-inset-top)) 16px 16px;
+  transform:translateX(100%);transition:transform .25s ease;
+}
+.panel-pares.abierto{transform:translateX(0)}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
@@ -223,6 +240,15 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
   </section>
 
 </div>
+
+<div id="overlayPanel" class="overlay"></div>
+<aside id="panelPares" class="panel-pares">
+  <div class="panel-header">
+    <p class="eyebrow" style="margin:0">Pares cercanos</p>
+    <button class="btn-sec" id="btnCerrarPanel" style="width:auto;padding:6px 10px">Cerrar</button>
+  </div>
+  <div id="panelParesBody"></div>
+</aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="app.js"></script>

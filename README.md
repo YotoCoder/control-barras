@@ -34,6 +34,14 @@ Tocar el nombre del embarque, arriba a la derecha, abre el selector de
 archivo para cargar otro `.xlsx`. Si ya hay asignaciones hechas, pide
 confirmación antes de reemplazar el embarque — se pierden todas.
 
+### Ver los pares en riesgo en cualquier momento
+
+El aviso de pares cercanos que aparece al cargar el packing (qué items no se
+pueden separar solo por peso) se pierde de la pantalla en cuanto empiezas a
+pesar. Deslizando a la izquierda en cualquier parte de la pantalla se abre un
+panel lateral con ese mismo aviso; deslizando a la derecha, o tocando fuera
+del panel, se cierra.
+
 ## Alertas
 
 | Situación | Aviso |

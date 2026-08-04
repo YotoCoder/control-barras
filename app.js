@@ -307,6 +307,41 @@ async function borrarAnotacion() {
   cancelarEdicion();
 }
 
+// ---------- Panel de pares cercanos ----------
+function calcularPares() {
+  const orden = [...embarque.barras].sort((a, b) => a.bruto - b.bruto);
+  let gapMin = Infinity, par = null;
+  const riesgo = [];
+  for (let i = 1; i < orden.length; i++) {
+    const gap = orden[i].bruto - orden[i - 1].bruto;
+    if (gap < gapMin) { gapMin = gap; par = `${orden[i - 1].item}/${orden[i].item}`; }
+    if (gap < TOL_AMBIG) riesgo.push(`${orden[i - 1].item}/${orden[i].item} (${fmt(gap)} g)`);
+  }
+  return { gapMin, par, riesgo };
+}
+
+function mensajePares(barrasLen) {
+  const { gapMin, par, riesgo } = calcularPares();
+  const prefijo = barrasLen ? `${barrasLen} barras. ` : '';
+  return riesgo.length
+    ? `<div class="est est-mal"><b>Pares en riesgo</b>${prefijo}Estos pares no se pueden separar solo por peso: ` +
+      `${riesgo.join(', ')}. Vas a necesitar otra pista para esas barras.</div>`
+    : `<div class="est est-ok"><b>Sin pares en riesgo</b>${prefijo}El par más cercano es el ${par}, separado por ` +
+      `${fmt(gapMin)} g. Cada peso identifica una sola barra sin ambigüedad.</div>`;
+}
+
+function abrirPanel() {
+  if (!embarque) return;
+  $('panelParesBody').innerHTML = mensajePares();
+  $('panelPares').classList.add('abierto');
+  $('overlayPanel').classList.add('abierto');
+}
+
+function cerrarPanel() {
+  $('panelPares').classList.remove('abierto');
+  $('overlayPanel').classList.remove('abierto');
+}
+
 // ---------- Eventos ----------
 $('nombreEmbarque').addEventListener('click', () => {
   const hechas = embarque ? Object.keys(registros).length : 0;
@@ -327,22 +362,9 @@ $('archivoXlsx').addEventListener('change', async e => {
     await guardar('kv', 'embarque', embarque);
     await guardar('kv', 'registros', registros);
 
-    const orden = [...barras].sort((a, b) => a.bruto - b.bruto);
-    let gapMin = Infinity, par = null;
-    const riesgo = [];
-    for (let i = 1; i < orden.length; i++) {
-      const gap = orden[i].bruto - orden[i - 1].bruto;
-      if (gap < gapMin) { gapMin = gap; par = `${orden[i - 1].item}/${orden[i].item}`; }
-      if (gap < TOL_AMBIG) riesgo.push(`${orden[i - 1].item}/${orden[i].item} (${fmt(gap)} g)`);
-    }
     pintarTodo();
-    $('estado').innerHTML = riesgo.length
-      ? `<div class="est est-mal"><b>Packing list cargado — con reservas</b>${barras.length} barras. ` +
-        `Estos pares no se pueden separar solo por peso: ${riesgo.join(', ')}. ` +
-        `Vas a necesitar otra pista para esas barras.</div>`
-      : `<div class="est est-ok"><b>Packing list cargado</b>${barras.length} barras. ` +
-        `El par más cercano es el ${par}, separado por ${fmt(gapMin)} g. ` +
-        `Cada peso identifica una sola barra sin ambigüedad.</div>`;
+    $('estado').innerHTML = mensajePares(barras.length) +
+      '<p class="nota" style="margin:8px 0 0">Desliza a la izquierda para volver a ver este aviso.</p>';
   } catch (err) {
     $('errorCarga').innerHTML =
       `<div class="est est-mal" style="margin-top:14px"><b>No pude leer el archivo</b>${err.message}</div>`;
@@ -378,6 +400,23 @@ $('btnConfirmar').addEventListener('click', async () => {
 });
 
 $('btnExcel').addEventListener('click', exportarExcel);
+
+$('overlayPanel').addEventListener('click', cerrarPanel);
+$('btnCerrarPanel').addEventListener('click', cerrarPanel);
+
+let touchX = null, touchY = null;
+document.addEventListener('touchstart', e => {
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (touchX == null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+  touchX = null;
+  if (Math.abs(dx) < 60 || Math.abs(dy) > 60) return;
+  if (dx < 0) abrirPanel(); else cerrarPanel();
+}, { passive: true });
 
 // ---------- Arranque ----------
 (async () => {
