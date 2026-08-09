@@ -374,6 +374,22 @@ function cerrarPanel() {
   $('overlayPanel').classList.remove('abierto');
 }
 
+// ---------- Actualización ----------
+async function vaciarCache() {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) await r.unregister();
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (const k of keys) await caches.delete(k);
+    }
+  } finally {
+    location.reload();
+  }
+}
+
 // ---------- Eventos ----------
 $('nombreEmbarque').addEventListener('click', () => {
   const hechas = embarque ? Object.keys(registros).length : 0;
@@ -439,6 +455,14 @@ $('btnConfirmar').addEventListener('click', async () => {
 $('btnExcel').addEventListener('click', exportarExcel);
 $('btnDeshacer').addEventListener('click', deshacerUltima);
 
+$('btnVaciarCache').addEventListener('click', () => {
+  if (!confirm(
+    'Esto borra los archivos guardados para uso sin señal y recarga la app. ' +
+    'Vas a necesitar conexión para que vuelva a funcionar offline. ¿Continuar?'
+  )) return;
+  vaciarCache();
+});
+
 $('overlayPanel').addEventListener('click', cerrarPanel);
 $('btnCerrarPanel').addEventListener('click', cerrarPanel);
 $('toastCerrar').addEventListener('click', cerrarToast);
@@ -479,5 +503,17 @@ $('toast').addEventListener('touchend', e => {
   registros = (await leer('kv', 'registros')) || {};
   historial = (await leer('kv', 'historial')) || [];
   pintarTodo();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => reg.update().catch(() => {}))
+      .catch(() => {});
+
+    let recargando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recargando) return;
+      recargando = true;
+      location.reload();
+    });
+  }
 })();

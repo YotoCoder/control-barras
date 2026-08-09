@@ -51,6 +51,14 @@ pesar. Deslizando a la izquierda en cualquier parte de la pantalla se abre un
 panel lateral con ese mismo aviso; deslizando a la derecha, o tocando fuera
 del panel, se cierra.
 
+### Si la app instalada no se actualiza sola
+
+Con conexión, al abrirla la app revisa si hay una versión nueva y, si la hay,
+se recarga sola. Si aun así queda pegada en una versión vieja, el botón
+"Actualizar app (vaciar caché)" al final de la pantalla borra el service
+worker y todo lo cacheado, y recarga — necesita conexión para volver a
+funcionar sin señal después.
+
 ## Alertas
 
 | Situación | Aviso |
