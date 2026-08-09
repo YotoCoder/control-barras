@@ -323,7 +323,21 @@ async function deshacerUltima() {
 
 // ---------- Toast ----------
 let toastTimer = null;
+
+// Ancla el toast al viewport visual real: con el teclado de iOS abierto,
+// position:fixed puede desalinearse del área que de verdad se ve en pantalla.
+function posicionarToast() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  $('toast').style.top = (vv.offsetTop + 10) + 'px';
+}
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', posicionarToast);
+  visualViewport.addEventListener('scroll', posicionarToast);
+}
+
 function mostrarToast(texto, tipo = 'ok') {
+  posicionarToast();
   $('toastTexto').textContent = texto;
   $('toast').classList.remove('ok', 'deshacer');
   $('toast').classList.add(tipo);
@@ -448,8 +462,10 @@ $('btnConfirmar').addEventListener('click', async () => {
   $('peso').value = '';
   $('bannerEdicion').classList.add('oculto');
   pintarTodo();
-  if (!volverAEditar) $('peso').focus();
   if (esNueva) mostrarToast(`Item ${registros[candidato.item].item} asignado — ${fmt(medido)} g`);
+  // el foco reabre el teclado en iPhone; se retrasa un poco para que el
+  // toast alcance a pintarse antes de que Safari mueva el viewport visual
+  if (!volverAEditar) setTimeout(() => $('peso').focus(), 80);
 });
 
 $('btnExcel').addEventListener('click', exportarExcel);
