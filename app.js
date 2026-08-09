@@ -324,20 +324,7 @@ async function deshacerUltima() {
 // ---------- Toast ----------
 let toastTimer = null;
 
-// Ancla el toast al viewport visual real: con el teclado de iOS abierto,
-// position:fixed puede desalinearse del área que de verdad se ve en pantalla.
-function posicionarToast() {
-  const vv = window.visualViewport;
-  if (!vv) return;
-  $('toast').style.top = (vv.offsetTop + 10) + 'px';
-}
-if (window.visualViewport) {
-  visualViewport.addEventListener('resize', posicionarToast);
-  visualViewport.addEventListener('scroll', posicionarToast);
-}
-
 function mostrarToast(texto, tipo = 'ok') {
-  posicionarToast();
   $('toastTexto').textContent = texto;
   $('toast').classList.remove('ok', 'deshacer');
   $('toast').classList.add(tipo);
