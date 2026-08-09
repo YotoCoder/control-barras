@@ -318,13 +318,15 @@ async function deshacerUltima() {
   await guardar('kv', 'registros', registros);
   await guardar('kv', 'historial', historial);
   if (edicion === item) cancelarEdicion(); else pintarTodo();
-  mostrarToast(`Deshecho: item ${item} vuelve al pool.`);
+  mostrarToast(`Deshecho: item ${item} vuelve al pool.`, 'deshacer');
 }
 
 // ---------- Toast ----------
 let toastTimer = null;
-function mostrarToast(texto) {
+function mostrarToast(texto, tipo = 'ok') {
   $('toastTexto').textContent = texto;
+  $('toast').classList.remove('ok', 'deshacer');
+  $('toast').classList.add(tipo);
   $('toast').classList.remove('oculto');
   requestAnimationFrame(() => $('toast').classList.add('visible'));
   clearTimeout(toastTimer);
