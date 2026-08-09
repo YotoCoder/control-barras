@@ -1,5 +1,5 @@
 /* Cachea el esqueleto de la app para que funcione sin señal. */
-const CACHE = 'barras-v2';
+const CACHE = 'barras-v3';
 const SHELL = [
   './',
   './index.html',
@@ -29,7 +29,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(res => {
+    // cache:'no-store' es la parte importante: sin esto, "network-first" igual
+    // puede devolver una respuesta de la caché HTTP normal del navegador
+    // (GitHub Pages sirve con cache-control: max-age=600), no una realmente
+    // fresca de la red.
+    fetch(e.request, { cache: 'no-store' }).then(res => {
       const copia = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copia)).catch(() => {});
       return res;

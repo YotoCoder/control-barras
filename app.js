@@ -385,7 +385,9 @@ async function vaciarCache() {
       for (const k of keys) await caches.delete(k);
     }
   } finally {
-    location.reload();
+    // URL con parámetro único: nunca pudo haber quedado en ninguna caché,
+    // ni la del service worker ni la HTTP normal del navegador.
+    location.href = location.pathname + '?actualizado=' + Date.now();
   }
 }
 
