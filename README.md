@@ -18,7 +18,16 @@ pintarle el número. La app hace la parte de averiguar.
 5. Pintas y confirmas. Esa barra sale del pool; su casilla en el progreso
    sigue mostrando el peso de la lista, y debajo aparece la diferencia contra
    lo que pesó, en rojo (si faltó peso) o verde (si sobró) — así, más adelante,
-   para verificarla basta con volver a pesarla y comparar el delta.
+   para verificarla basta con volver a pesarla y comparar el delta. Arriba
+   aparece un aviso pequeño confirmando qué item quedó asignado y con qué
+   peso; se cierra solo, deslizándolo, o con la X.
+
+### Deshacer la última asignación
+
+El botón "Deshacer última asignación" aparece debajo de "Confirmar" en cuanto
+hay algo que deshacer. Es un Ctrl+Z de una sola barra: quita del pool la
+última que asignaste (no las correcciones, esas se manejan aparte) y la deja
+sin peso registrado, lista para volver a pesarla.
 
 ### Corregir o borrar una asignación
 

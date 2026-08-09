@@ -9,6 +9,7 @@ const TOL_AMBIG = 3.00;  // margen mínimo que debe sacar el 1er candidato al 2�
 // ---------- Estado ----------
 let embarque = null;   // { nombre, cargadoEn, barras:[{item,bruto,ley,puro}] }
 let registros = {};    // asignaciones  { item: {item, medido, delta, ts} }
+let historial = [];    // items asignados en orden, para poder deshacer el último
 let edicion = null;    // item en corrección, o null
 let candidato = null;  // barra candidata en vivo
 
@@ -224,6 +225,7 @@ function pintarProgreso() {
   const hechas = Object.keys(registros).length;
   $('progBarra').style.width = (hechas / total * 100) + '%';
   $('resumenProgreso').textContent = `${hechas} / ${total} barras asignadas`;
+  $('btnDeshacer').classList.toggle('oculto', !historial.length);
 
   $('gridItems').innerHTML = embarque.barras.map(b => {
     const r = registros[b.item];
@@ -303,8 +305,36 @@ async function borrarAnotacion() {
   const item = edicion;
   if (!confirm(`¿Borrar la asignación del item ${item}? Vuelve al pool sin peso registrado.`)) return;
   delete registros[item];
+  historial = historial.filter(i => i !== item);
   await guardar('kv', 'registros', registros);
+  await guardar('kv', 'historial', historial);
   cancelarEdicion();
+}
+
+async function deshacerUltima() {
+  if (!historial.length) return;
+  const item = historial.pop();
+  delete registros[item];
+  await guardar('kv', 'registros', registros);
+  await guardar('kv', 'historial', historial);
+  if (edicion === item) cancelarEdicion(); else pintarTodo();
+  mostrarToast(`Deshecho: item ${item} vuelve al pool.`);
+}
+
+// ---------- Toast ----------
+let toastTimer = null;
+function mostrarToast(texto) {
+  $('toastTexto').textContent = texto;
+  $('toast').classList.remove('oculto');
+  requestAnimationFrame(() => $('toast').classList.add('visible'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(cerrarToast, 4000);
+}
+
+function cerrarToast() {
+  clearTimeout(toastTimer);
+  $('toast').classList.remove('visible');
+  setTimeout(() => $('toast').classList.add('oculto'), 200);
 }
 
 // ---------- Panel de pares cercanos ----------
@@ -358,9 +388,10 @@ $('archivoXlsx').addEventListener('change', async e => {
     if (typeof XLSX === 'undefined') throw new Error('La librería de Excel no cargó. Necesitas conexión la primera vez.');
     const barras = parsearLibro(await file.arrayBuffer());
     embarque = { nombre: file.name.replace(/\.xlsx?$/i, ''), cargadoEn: Date.now(), barras };
-    registros = {}; edicion = null;
+    registros = {}; historial = []; edicion = null;
     await guardar('kv', 'embarque', embarque);
     await guardar('kv', 'registros', registros);
+    await guardar('kv', 'historial', historial);
 
     pintarTodo();
     $('estado').innerHTML = mensajePares(barras.length) +
@@ -387,9 +418,12 @@ $('btnBorrarAnotacion').addEventListener('click', borrarAnotacion);
 $('btnConfirmar').addEventListener('click', async () => {
   if (!candidato) return;
   const medido = parseFloat($('peso').value.replace(',', '.'));
+  const esNueva = edicion == null;
 
   registros[candidato.item] = { item: candidato.item, medido, delta: candidato.delta, ts: Date.now() };
+  if (esNueva) historial.push(candidato.item);
   await guardar('kv', 'registros', registros);
+  if (esNueva) await guardar('kv', 'historial', historial);
 
   const volverAEditar = edicion != null;
   edicion = null;
@@ -397,12 +431,15 @@ $('btnConfirmar').addEventListener('click', async () => {
   $('bannerEdicion').classList.add('oculto');
   pintarTodo();
   if (!volverAEditar) $('peso').focus();
+  if (esNueva) mostrarToast(`Item ${registros[candidato.item].item} asignado — ${fmt(medido)} g`);
 });
 
 $('btnExcel').addEventListener('click', exportarExcel);
+$('btnDeshacer').addEventListener('click', deshacerUltima);
 
 $('overlayPanel').addEventListener('click', cerrarPanel);
 $('btnCerrarPanel').addEventListener('click', cerrarPanel);
+$('toastCerrar').addEventListener('click', cerrarToast);
 
 let touchX = null, touchY = null;
 document.addEventListener('touchstart', e => {
@@ -418,11 +455,27 @@ document.addEventListener('touchend', e => {
   if (dx < 0) abrirPanel(); else cerrarPanel();
 }, { passive: true });
 
+let toastTouchX = null, toastTouchY = null;
+$('toast').addEventListener('touchstart', e => {
+  e.stopPropagation();
+  toastTouchX = e.touches[0].clientX;
+  toastTouchY = e.touches[0].clientY;
+}, { passive: true });
+$('toast').addEventListener('touchend', e => {
+  e.stopPropagation();
+  if (toastTouchX == null) return;
+  const dx = e.changedTouches[0].clientX - toastTouchX;
+  const dy = e.changedTouches[0].clientY - toastTouchY;
+  toastTouchX = null;
+  if (Math.hypot(dx, dy) > 24) cerrarToast();
+}, { passive: true });
+
 // ---------- Arranque ----------
 (async () => {
   await abrirDB();
   embarque = (await leer('kv', 'embarque')) || null;
   registros = (await leer('kv', 'registros')) || {};
+  historial = (await leer('kv', 'historial')) || [];
   pintarTodo();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

@@ -161,6 +161,22 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 .panel-pares.abierto{transform:translateX(0)}
 .panel-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 
+/* --- toast --- */
+.toast{
+  position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;
+  transform:translateX(-50%) translateY(-14px);
+  background:var(--acero-alto);border:1px solid var(--verde);border-radius:6px;
+  padding:8px 8px 8px 13px;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:12.5px;color:#8fdcab;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:30;max-width:92vw;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.visible{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.toast button{
+  background:none;border:none;color:inherit;font-size:17px;line-height:1;
+  padding:2px 3px;width:auto;font-weight:400;text-transform:none;letter-spacing:0;
+}
+
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
@@ -223,6 +239,7 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
     </div>
 
     <button class="btn-primario" id="btnConfirmar" disabled>Confirmar</button>
+    <button class="btn-sec oculto" id="btnDeshacer" style="margin-top:10px">Deshacer última asignación</button>
 
     <hr>
 
@@ -239,6 +256,11 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
     </div>
   </section>
 
+</div>
+
+<div id="toast" class="toast oculto">
+  <span id="toastTexto"></span>
+  <button id="toastCerrar" aria-label="Cerrar">&times;</button>
 </div>
 
 <div id="overlayPanel" class="overlay"></div>
