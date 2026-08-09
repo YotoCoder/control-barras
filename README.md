@@ -19,8 +19,8 @@ pintarle el número. La app hace la parte de averiguar.
    sigue mostrando el peso de la lista, y debajo aparece la diferencia contra
    lo que pesó, en rojo (si faltó peso) o verde (si sobró) — así, más adelante,
    para verificarla basta con volver a pesarla y comparar el delta. Arriba
-   aparece un aviso pequeño confirmando qué item quedó asignado y con qué
-   peso; se cierra solo, deslizándolo, o con la X.
+   aparece un aviso que confirma qué item quedó asignado y con qué peso, y se
+   cierra solo a los pocos segundos.
 
 ### Deshacer la última asignación
 
@@ -50,6 +50,12 @@ pueden separar solo por peso) se pierde de la pantalla en cuanto empiezas a
 pesar. Deslizando a la izquierda en cualquier parte de la pantalla se abre un
 panel lateral con ese mismo aviso; deslizando a la derecha, o tocando fuera
 del panel, se cierra.
+
+### Tema claro / oscuro
+
+El botón junto al nombre del embarque cicla entre **Auto** (sigue el tema del
+sistema), **Claro** y **Oscuro**. Queda guardado en el teléfono, así que no
+hay que volver a elegirlo cada vez que se abre la app.
 
 ### Si la app instalada no se actualiza sola
 

@@ -9,23 +9,81 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Control de barras</title>
+<script>
+  // Aplica el tema guardado ANTES de pintar, para que no haya parpadeo.
+  try {
+    document.documentElement.dataset.theme = localStorage.getItem('tema') || 'auto';
+  } catch (e) {}
+</script>
 <style>
 :root{
+  /* oscuro: valores base */
   --acero:#1d2023;
   --acero-alto:#282c31;
   --acero-borde:#3a4046;
   --lcd:#e6e8c4;
   --lcd-borde:#b9bd93;
   --digito:#4b4fa6;
+  --digito-datos:#5a5e8e;
+  --lcd-vacio-texto:#8d9070;
   --oro:#c9a227;
+  --oro-texto:#231c00;
   --verde:#1b7a3e;
   --verde-claro:#4caf6e;
+  --verde-texto:#8fdcab;
   --ambar:#d68a1a;
+  --ambar-texto:#f0bf72;
   --rojo:#c4402f;
+  --rojo-texto:#f0a094;
   --texto:#e8eaec;
   --texto-tenue:#8b9298;
+  --edicion-texto:#c7c9f4;
+  --pintar-texto:#e6c65e;
+  --btn-disabled-texto:#585e64;
+  --btn-primario-texto:#fff;
+  --sombra:rgba(0,0,0,.4);
   --mono:ui-monospace,"SF Mono",Menlo,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+:root[data-theme="light"]{
+  --acero:#f2f1ed;
+  --acero-alto:#ffffff;
+  --acero-borde:#d9d7d1;
+  --digito-datos:#585c8e;
+  --oro:#8a6a0c;
+  --verde-claro:#2f8f52;
+  --verde-texto:#1f7a45;
+  --ambar:#a5670a;
+  --ambar-texto:#8a5709;
+  --rojo:#b23324;
+  --rojo-texto:#a4291b;
+  --texto:#1d2023;
+  --texto-tenue:#696f75;
+  --edicion-texto:#3f4391;
+  --pintar-texto:#8a6a0c;
+  --btn-disabled-texto:#b3b7bb;
+  --sombra:rgba(0,0,0,.15);
+}
+@media (prefers-color-scheme: light){
+  :root[data-theme="auto"]{
+    --acero:#f2f1ed;
+    --acero-alto:#ffffff;
+    --acero-borde:#d9d7d1;
+    --digito-datos:#585c8e;
+    --oro:#8a6a0c;
+    --verde-claro:#2f8f52;
+    --verde-texto:#1f7a45;
+    --ambar:#a5670a;
+    --ambar-texto:#8a5709;
+    --rojo:#b23324;
+    --rojo-texto:#a4291b;
+    --texto:#1d2023;
+    --texto-tenue:#696f75;
+    --edicion-texto:#3f4391;
+    --pintar-texto:#8a6a0c;
+    --btn-disabled-texto:#b3b7bb;
+    --sombra:rgba(0,0,0,.15);
+  }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -40,15 +98,22 @@ body{
 .wrap{max-width:560px;margin:0 auto;padding:16px 16px 40px}
 
 /* --- cabecera --- */
-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
-h1{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+h1{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin:0;flex-shrink:0}
+.header-der{display:flex;align-items:center;gap:6px;min-width:0}
 .embarque{
   font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
   background:none;border:1px dashed var(--acero-borde);border-radius:4px;
   padding:5px 9px;width:auto;text-transform:none;letter-spacing:0;font-weight:400;
-  cursor:pointer;
+  cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .embarque:active{opacity:.7}
+.btn-tema{
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--texto-tenue);
+  background:none;border:1px solid var(--acero-borde);border-radius:4px;
+  width:auto;padding:6px 8px;flex-shrink:0;cursor:pointer;font-weight:600;
+}
+.btn-tema:active{opacity:.7}
 
 /* --- etiquetas utilitarias --- */
 .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--texto-tenue);margin:0 0 6px}
@@ -72,16 +137,16 @@ h1{font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
 .lcd-datos{
   display:flex;gap:18px;margin-top:10px;padding-top:9px;
   border-top:1px solid rgba(75,79,166,.28);
-  font-family:var(--mono);font-size:12.5px;color:#5a5e8e;
+  font-family:var(--mono);font-size:12.5px;color:var(--digito-datos);
 }
 .lcd-datos b{font-weight:700;color:var(--digito)}
-.lcd-vacio{font-family:var(--mono);font-size:15px;color:#8d9070;letter-spacing:.06em;text-align:center;padding:16px 0}
+.lcd-vacio{font-family:var(--mono);font-size:15px;color:var(--lcd-vacio-texto);letter-spacing:.06em;text-align:center;padding:16px 0}
 
 /* --- estados --- */
 .est{border-left:4px solid transparent;padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:14px}
-.est-ok{background:rgba(27,122,62,.14);border-color:var(--verde-claro);color:#8fdcab}
-.est-warn{background:rgba(214,138,26,.14);border-color:var(--ambar);color:#f0bf72}
-.est-mal{background:rgba(196,64,47,.16);border-color:var(--rojo);color:#f0a094}
+.est-ok{background:rgba(27,122,62,.14);border-color:var(--verde-claro);color:var(--verde-texto)}
+.est-warn{background:rgba(214,138,26,.14);border-color:var(--ambar);color:var(--ambar-texto)}
+.est-mal{background:rgba(196,64,47,.16);border-color:var(--rojo);color:var(--rojo-texto)}
 .est b{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
 
 /* --- formulario --- */
@@ -101,10 +166,10 @@ button{
 }
 button:active{opacity:.7}
 button:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
-.btn-primario{background:var(--verde);color:#fff}
-.btn-primario:disabled{background:var(--acero-alto);color:#585e64;cursor:default}
+.btn-primario{background:var(--verde);color:var(--btn-primario-texto)}
+.btn-primario:disabled{background:var(--acero-alto);color:var(--btn-disabled-texto);cursor:default}
 .btn-sec{background:var(--acero-alto);color:var(--texto);border:1px solid var(--acero-borde)}
-.btn-oro{background:var(--oro);color:#231c00}
+.btn-oro{background:var(--oro);color:var(--oro-texto)}
 .fila-btn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .fila-btn.sola{grid-template-columns:1fr}
 
@@ -120,10 +185,10 @@ input[type=file]{display:none}
   padding:9px 18px 14px 6px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--texto-tenue);
 }
 .chip b{display:block;font-size:19px;color:var(--texto);font-weight:700}
-.chip.hecho{background:rgba(27,122,62,.16);border-color:var(--verde);color:#8fdcab;cursor:pointer}
-.chip.hecho b{color:#8fdcab}
-.chip.alerta{background:rgba(196,64,47,.16);border-color:var(--rojo);color:#f0a094;cursor:pointer}
-.chip.alerta b{color:#f0a094}
+.chip.hecho{background:rgba(27,122,62,.16);border-color:var(--verde);color:var(--verde-texto);cursor:pointer}
+.chip.hecho b{color:var(--verde-texto)}
+.chip.alerta{background:rgba(196,64,47,.16);border-color:var(--rojo);color:var(--rojo-texto);cursor:pointer}
+.chip.alerta b{color:var(--rojo-texto)}
 .chip.hecho:active,.chip.alerta:active{opacity:.7}
 .chip.editando{outline:2px solid var(--oro);outline-offset:1px}
 .chip-peso{display:block}
@@ -135,9 +200,25 @@ input[type=file]{display:none}
 /* --- instrucción de pintado --- */
 .pintar{
   background:rgba(201,162,39,.14);border:1px dashed var(--oro);border-radius:4px;
-  padding:11px 13px;margin-bottom:14px;font-size:13.5px;color:#e6c65e;
+  padding:11px 13px;margin-bottom:14px;font-size:13.5px;color:var(--pintar-texto);
 }
 .pintar b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px;color:var(--oro)}
+
+/* --- corrección de asignación --- */
+.banner-edicion{
+  border-color:var(--digito);background:rgba(75,79,166,.14);color:var(--edicion-texto);
+}
+.banner-edicion b{color:var(--digito)}
+
+/* --- toast --- */
+.toast{
+  display:none;align-items:center;gap:8px;
+  border-left:4px solid var(--verde-claro);background:rgba(27,122,62,.12);
+  color:var(--verde-texto);padding:10px 12px;border-radius:3px;margin-bottom:14px;
+  font-size:14px;
+}
+.toast.visible{display:flex}
+.toast.deshacer{border-left-color:var(--ambar);background:rgba(214,138,26,.12);color:var(--ambar-texto)}
 
 /* --- varios --- */
 section{margin-bottom:26px}
@@ -158,7 +239,7 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 .panel-pares{
   position:fixed;top:0;right:0;height:100%;width:min(320px,86vw);
   background:var(--acero-alto);border-left:1px solid var(--acero-borde);
-  box-shadow:-8px 0 24px rgba(0,0,0,.35);z-index:20;overflow-y:auto;
+  box-shadow:-8px 0 24px var(--sombra);z-index:20;overflow-y:auto;
   padding:calc(16px + env(safe-area-inset-top)) 16px 16px;
   transform:translateX(100%);transition:transform .25s ease;
 }
@@ -173,7 +254,10 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 
   <header>
     <h1>Control de barras</h1>
-    <button class="embarque" id="nombreEmbarque" title="Tocar para cargar otro packing list">sin embarque</button>
+    <div class="header-der">
+      <button class="embarque" id="nombreEmbarque" title="Tocar para cargar otro packing list">sin embarque</button>
+      <button class="btn-tema" id="btnTema" title="Cambiar tema">AUTO</button>
+    </div>
   </header>
 
   <!-- ========== SIN EMBARQUE ========== -->
@@ -188,7 +272,7 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
   <!-- ========== ASIGNACIÓN ========== -->
   <section id="vistaPesaje" class="oculto">
 
-    <div id="toast" style="display:none;background:#1b7a3e;color:#fff;padding:12px 14px;border-radius:4px;margin-bottom:14px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;text-align:center;font-weight:600"></div>
+    <div id="toast" class="toast"></div>
 
     <div class="lcd">
       <div id="lcdVacio" class="lcd-vacio">esperando peso</div>
@@ -210,12 +294,12 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
       <span id="txtPintar"></span>
     </div>
 
-    <div id="bannerEdicion" class="pintar oculto" style="border-color:var(--digito);background:rgba(75,79,166,.14);color:#c7c9f4">
-      <b style="color:var(--digito)">Corrigiendo</b>
+    <div id="bannerEdicion" class="pintar banner-edicion oculto">
+      <b>Corrigiendo</b>
       <span id="txtEdicion"></span>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn-sec" id="btnCancelarEdicion" style="padding:9px 14px;width:auto">Cancelar corrección</button>
-        <button class="btn-sec" id="btnBorrarAnotacion" style="padding:9px 14px;width:auto;color:#f0a094">Borrar anotación</button>
+        <button class="btn-sec" id="btnBorrarAnotacion" style="padding:9px 14px;width:auto;color:var(--rojo-texto)">Borrar anotación</button>
       </div>
     </div>
 

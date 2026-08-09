@@ -318,17 +318,17 @@ async function deshacerUltima() {
   await guardar('kv', 'registros', registros);
   await guardar('kv', 'historial', historial);
   if (edicion === item) cancelarEdicion(); else pintarTodo();
-  mostrarToast(`Deshecho: item ${item} vuelve al pool.`, '#d68a1a');
+  mostrarToast(`Deshecho: item ${item} vuelve al pool.`, 'deshacer');
 }
 
 // ---------- Toast ----------
-function mostrarToast(texto, color) {
+function mostrarToast(texto, tipo) {
   const toast = $('toast');
   toast.textContent = texto;
-  toast.style.background = color;
-  toast.style.display = 'block';
+  toast.classList.toggle('deshacer', tipo === 'deshacer');
+  toast.classList.add('visible');
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+  toast._timer = setTimeout(() => toast.classList.remove('visible'), 4000);
 }
 
 // ---------- Panel de pares cercanos ----------
@@ -384,7 +384,40 @@ async function vaciarCache() {
   }
 }
 
+// ---------- Tema ----------
+const TEMAS = ['auto', 'light', 'dark'];
+const ETIQUETAS_TEMA = { auto: 'AUTO', light: 'CLARO', dark: 'OSCURO' };
+
+function colorDeFondoActual() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--acero').trim();
+}
+
+function pintarBotonTema(tema) {
+  $('btnTema').textContent = ETIQUETAS_TEMA[tema];
+  $('btnTema').title = `Tema: ${ETIQUETAS_TEMA[tema]} — tocar para cambiar`;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = colorDeFondoActual();
+}
+
+function aplicarTema(tema) {
+  document.documentElement.dataset.theme = tema;
+  localStorage.setItem('tema', tema);
+  pintarBotonTema(tema);
+}
+
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    if (document.documentElement.dataset.theme === 'auto') pintarBotonTema('auto');
+  });
+}
+
 // ---------- Eventos ----------
+$('btnTema').addEventListener('click', () => {
+  const actual = document.documentElement.dataset.theme || 'auto';
+  const siguiente = TEMAS[(TEMAS.indexOf(actual) + 1) % TEMAS.length];
+  aplicarTema(siguiente);
+});
+
 $('nombreEmbarque').addEventListener('click', () => {
   const hechas = embarque ? Object.keys(registros).length : 0;
   if (hechas && !confirm(
@@ -444,7 +477,7 @@ $('btnConfirmar').addEventListener('click', async () => {
   $('bannerEdicion').classList.add('oculto');
   pintarTodo();
 
-  if (esNueva) mostrarToast(`Item ${itemConfirmado} asignado — ${fmt(medido)} g`, '#1b7a3e');
+  if (esNueva) mostrarToast(`Item ${itemConfirmado} asignado — ${fmt(medido)} g`);
 
   if (!volverAEditar) $('peso').focus();
 });
@@ -478,6 +511,8 @@ document.addEventListener('touchend', e => {
 }, { passive: true });
 
 // ---------- Arranque ----------
+pintarBotonTema(document.documentElement.dataset.theme || 'auto');
+
 (async () => {
   await abrirDB();
   embarque = (await leer('kv', 'embarque')) || null;
