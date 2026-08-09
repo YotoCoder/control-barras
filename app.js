@@ -318,24 +318,17 @@ async function deshacerUltima() {
   await guardar('kv', 'registros', registros);
   await guardar('kv', 'historial', historial);
   if (edicion === item) cancelarEdicion(); else pintarTodo();
-  mostrarToast(`Deshecho: item ${item} vuelve al pool.`, 'deshacer');
+  mostrarToast(`Deshecho: item ${item} vuelve al pool.`, '#d68a1a');
 }
 
 // ---------- Toast ----------
-let toastTimer = null;
-
-function mostrarToast(texto, tipo = 'ok') {
-  $('toastTexto').textContent = texto;
-  $('toast').classList.remove('ok', 'deshacer');
-  $('toast').classList.add(tipo);
-  $('toast').classList.remove('oculto');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(cerrarToast, 4000);
-}
-
-function cerrarToast() {
-  clearTimeout(toastTimer);
-  $('toast').classList.add('oculto');
+function mostrarToast(texto, color) {
+  const toast = $('toast');
+  toast.textContent = texto;
+  toast.style.background = color;
+  toast.style.display = 'block';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
 // ---------- Panel de pares cercanos ----------
@@ -438,6 +431,7 @@ $('btnConfirmar').addEventListener('click', async () => {
   if (!candidato) return;
   const medido = parseFloat($('peso').value.replace(',', '.'));
   const esNueva = edicion == null;
+  const itemConfirmado = candidato.item; // pintarTodo() más abajo pone candidato en null
 
   registros[candidato.item] = { item: candidato.item, medido, delta: candidato.delta, ts: Date.now() };
   if (esNueva) historial.push(candidato.item);
@@ -449,7 +443,9 @@ $('btnConfirmar').addEventListener('click', async () => {
   $('peso').value = '';
   $('bannerEdicion').classList.add('oculto');
   pintarTodo();
-  if (esNueva) mostrarToast(`Item ${registros[candidato.item].item} asignado — ${fmt(medido)} g`);
+
+  if (esNueva) mostrarToast(`Item ${itemConfirmado} asignado — ${fmt(medido)} g`, '#1b7a3e');
+
   if (!volverAEditar) $('peso').focus();
 });
 
@@ -466,7 +462,6 @@ $('btnVaciarCache').addEventListener('click', () => {
 
 $('overlayPanel').addEventListener('click', cerrarPanel);
 $('btnCerrarPanel').addEventListener('click', cerrarPanel);
-$('toastCerrar').addEventListener('click', cerrarToast);
 
 let touchX = null, touchY = null;
 document.addEventListener('touchstart', e => {
@@ -480,21 +475,6 @@ document.addEventListener('touchend', e => {
   touchX = null;
   if (Math.abs(dx) < 60 || Math.abs(dy) > 60) return;
   if (dx < 0) abrirPanel(); else cerrarPanel();
-}, { passive: true });
-
-let toastTouchX = null, toastTouchY = null;
-$('toast').addEventListener('touchstart', e => {
-  e.stopPropagation();
-  toastTouchX = e.touches[0].clientX;
-  toastTouchY = e.touches[0].clientY;
-}, { passive: true });
-$('toast').addEventListener('touchend', e => {
-  e.stopPropagation();
-  if (toastTouchX == null) return;
-  const dx = e.changedTouches[0].clientX - toastTouchX;
-  const dy = e.changedTouches[0].clientY - toastTouchY;
-  toastTouchX = null;
-  if (Math.hypot(dx, dy) > 24) cerrarToast();
 }, { passive: true });
 
 // ---------- Arranque ----------
