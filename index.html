@@ -167,17 +167,14 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 
 /* --- toast --- */
 .toast{
-  position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;
-  transform:translateX(-50%) translateY(-14px);
+  display:flex;align-items:center;gap:10px;
   background:var(--acero-alto);border:1px solid var(--acero-borde);border-radius:6px;
-  padding:8px 8px 8px 13px;display:flex;align-items:center;gap:10px;
+  padding:9px 8px 9px 13px;margin-bottom:14px;
   font-family:var(--mono);font-size:12.5px;color:var(--texto);
-  box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:30;max-width:92vw;
-  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
 }
-.toast.visible{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 .toast.ok{border-color:var(--verde);color:#8fdcab}
 .toast.deshacer{border-color:var(--ambar);color:#f0bf72}
+.toast span{flex:1}
 .toast button{
   background:none;border:none;color:inherit;font-size:17px;line-height:1;
   padding:2px 3px;width:auto;font-weight:400;text-transform:none;letter-spacing:0;
@@ -205,6 +202,11 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 
   <!-- ========== ASIGNACIÓN ========== -->
   <section id="vistaPesaje" class="oculto">
+
+    <div id="toast" class="toast oculto">
+      <span id="toastTexto"></span>
+      <button id="toastCerrar" aria-label="Cerrar">&times;</button>
+    </div>
 
     <div class="lcd">
       <div id="lcdVacio" class="lcd-vacio">esperando peso</div>
@@ -264,11 +266,6 @@ hr{border:none;border-top:1px solid var(--acero-borde);margin:24px 0}
 
   <button class="btn-utilidad" id="btnVaciarCache">Actualizar app (vaciar caché)</button>
 
-</div>
-
-<div id="toast" class="toast oculto">
-  <span id="toastTexto"></span>
-  <button id="toastCerrar" aria-label="Cerrar">&times;</button>
 </div>
 
 <div id="overlayPanel" class="overlay"></div>

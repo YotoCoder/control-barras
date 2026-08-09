@@ -329,15 +329,13 @@ function mostrarToast(texto, tipo = 'ok') {
   $('toast').classList.remove('ok', 'deshacer');
   $('toast').classList.add(tipo);
   $('toast').classList.remove('oculto');
-  requestAnimationFrame(() => $('toast').classList.add('visible'));
   clearTimeout(toastTimer);
   toastTimer = setTimeout(cerrarToast, 4000);
 }
 
 function cerrarToast() {
   clearTimeout(toastTimer);
-  $('toast').classList.remove('visible');
-  setTimeout(() => $('toast').classList.add('oculto'), 200);
+  $('toast').classList.add('oculto');
 }
 
 // ---------- Panel de pares cercanos ----------
@@ -450,9 +448,7 @@ $('btnConfirmar').addEventListener('click', async () => {
   $('bannerEdicion').classList.add('oculto');
   pintarTodo();
   if (esNueva) mostrarToast(`Item ${registros[candidato.item].item} asignado — ${fmt(medido)} g`);
-  // el foco reabre el teclado en iPhone; se retrasa un poco para que el
-  // toast alcance a pintarse antes de que Safari mueva el viewport visual
-  if (!volverAEditar) setTimeout(() => $('peso').focus(), 80);
+  if (!volverAEditar) $('peso').focus();
 });
 
 $('btnExcel').addEventListener('click', exportarExcel);
